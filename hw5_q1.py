@@ -57,4 +57,25 @@ class QuestionnaireAnalysis:
 
         return hist, bins
 
-   
+    def remove_rows_without_mail(self) -> pd.DataFrame:
+        """Checks self.data for rows with invalid emails, and removes them.
+
+            Returns
+            -------
+            df : pd.DataFrame
+            A corrected DataFrame, i.e. the same table but with the erroneous rows removed and
+            the (ordinal) index after a reset.
+        """
+        bool_mask = self.data['email'].apply(
+            lambda email: isinstance(email, str)
+            and email.count('@') == 1 #contains only 1 @
+            and not (email.startswith(('@', '.')) or email.endswith(('@', '.'))) #doesn't start or end with @/.
+            and '.' in email #contains a dot
+            and email.find('@') < (len(email) - 1) #not the last char
+            and email[email.find('@') + 1] != '.' #there is no . after @
+            and len(email) < 320 #maximal length of an email address
+            and ' ' not in email #doesn't include spaces
+        )
+        df = self.data[bool_mask].reset_index(drop=True)
+
+        return df
