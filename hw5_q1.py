@@ -30,4 +30,31 @@ class QuestionnaireAnalysis:
             self.data = pd.read_json(file)
         return self.data
     
-    
+    def show_age_distrib(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Calculates and plots the age distribution of the participants.
+
+        Returns
+        -------
+        hist : np.ndarray
+            Number of people in a given bin
+        bins : np.ndarray
+            Bin edges
+        """
+        bin_edges = np.arange(0, 110, 10)
+        ages = self.data['age'].dropna()
+
+        hist, bins = np.histogram(ages, bins=bin_edges)
+
+        # Plot the histogram
+        plt.figure()
+        plt.hist(ages, bins=bins, edgecolor='black', align='left')
+        plt.xticks(bins)
+        plt.xlabel("Ages")
+        plt.ylabel("# of Participants")
+        plt.title("Age Distribution")
+        plt.tight_layout()
+        plt.show()
+
+        return hist, bins
+
+   
