@@ -102,9 +102,10 @@ def test_score_dtype():
 
 
 def test_score_results():
-    truth = pd.read_csv("tests_data/q4_score.csv", squeeze=True, index_col=0).astype(
-        "UInt8"
-    )
+    # truth = pd.read_csv("tests_data/q4_score.csv", squeeze=True, index_col=0).astype(
+    #     "UInt8"
+    # )
+    truth = pd.read_csv("tests_data/q4_score.csv", index_col=0).iloc[:, 0].astype("UInt8")
     fname = "data.json"
     q = QuestionnaireAnalysis(fname)
     q.read_data()
