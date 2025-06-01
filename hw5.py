@@ -26,7 +26,6 @@ class QuestionnaireAnalysis:
         the attribute self.data.
         """
         self.data = pd.read_json(self.data_fname)
-        # self.data = self.clean_data(unclean_data)
 
 
     def show_age_distrib(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -67,9 +66,11 @@ class QuestionnaireAnalysis:
         :param email: str
         :return: True if the email is valid, False otherwise.
         """
+        if not isinstance(email, str):
+            return False
         if email.count('@') != 1 or email.startswith('@') or email.endswith('@'):
             return False
-        if email.count('.') == 0 or email.startswith('.') or email.endswith('.'):
+        if '.' not in email or email.startswith('.') or email.endswith('.'):
             return False
         at_index = email.index('@')
         if email[at_index + 1] == '.':
@@ -91,13 +92,14 @@ class QuestionnaireAnalysis:
         """
         df = self.data.copy()
         questions_columns = ["q1", "q2", "q3", "q4", "q5"]
-        rows_with_na = df[df[questions_columns].isna().any(axis=1)]
-        rows_indices = rows_with_na.index.to_numpy()
+        rows_with_na = df[questions_columns].isna().any(axis=1)
+        # Get their integer indices as a numpy array
+        rows_indices = np.where(rows_with_na)[0]
 
-        for index in rows_indices:
-            row = df.loc[index, questions_columns]
+        for idx in rows_indices:
+            row = df.loc[idx, questions_columns]
             mean_value = row.mean(skipna=True)
-            df.loc[index, questions_columns] = row.fillna(mean_value)
+            df.loc[idx, questions_columns] = row.fillna(mean_value)
 
         return df, rows_indices
 
@@ -123,14 +125,42 @@ class QuestionnaireAnalysis:
 
         df = self.data.copy()
         questions_columns = ["q1", "q2", "q3", "q4", "q5"]
-        df["score"] = np.nan
 
-        for index, row in df.iterrows():
-            nans_count = row[questions_columns].isna().sum()
-            if nans_count <= maximal_nans_per_sub:
-                score = row[questions_columns].mean(skipna=True)
-                df.at[index, "score"] = np.floor(score)
+        nans_count = df[questions_columns].isna().sum(axis=1)
+        mean_scores = df[questions_columns].mean(axis=1, skipna=True)
 
+        score = pd.Series(pd.NA, index=df.index, dtype="UInt8")
 
-        df["score"] = df["score"].astype(pd.UInt8Dtype())
+        # find and keep rows with NaNs less than or equal to maximal_nans_per_sub
+        eligible_mask = (nans_count <= maximal_nans_per_sub)
+        score.loc[eligible_mask] = np.floor(mean_scores[eligible_mask]).astype("UInt8")
+
+        df["score"] = score
+
         return df
+
+    def correlate_gender_age(self) -> pd.DataFrame:
+        """Looks for a correlation between the gender of the subject, their age
+        and the score for all five questions.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with a MultiIndex containing the gender and whether the subject is above
+        40 years of age, and the average score in each of the five questions.
+    """
+
+        df = self.data.copy()
+        questions_columns = ["q1", "q2", "q3", "q4", "q5"]
+
+        # Drop any participant whose age is NaN so they don't end up in “<= 40” group
+        df = df[df['age'].notna()]
+        df["above_40"] = df["age"] > 40
+
+        df = df.set_index(["gender", "age"], append=True)
+
+
+        grouped = df.groupby(["gender", "above_40"])[questions_columns].mean()
+        grouped.index.set_names(["gender", "age"], inplace=True)
+
+        return grouped
