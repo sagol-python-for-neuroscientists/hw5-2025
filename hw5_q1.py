@@ -60,9 +60,9 @@ class QuestionnaireAnalysis:
     def remove_rows_without_mail(self) -> pd.DataFrame:
         """Checks self.data for rows with invalid emails, and removes them.
 
-            Returns
-            -------
-            df : pd.DataFrame
+        Returns
+        -------
+        df : pd.DataFrame
             A corrected DataFrame, i.e. the same table but with the erroneous rows removed and
             the (ordinal) index after a reset.
         """
@@ -79,3 +79,35 @@ class QuestionnaireAnalysis:
         df = self.data[bool_mask].reset_index(drop=True)
 
         return df
+
+    def fill_na_with_mean(self) -> Tuple[pd.DataFrame, np.ndarray]:
+        """Finds, in the original DataFrame, the subjects that didn't answer
+        all questions, and replaces that missing value with the mean of the
+        other grades for that student.
+
+        Returns
+        -------
+        df : pd.DataFrame
+            The corrected DataFrame after insertion of the mean grade
+        arr : np.ndarray
+            Row indices of the students that their new grades were generated
+        """
+        df = self.data.copy()
+        cols = ['q1', 'q2', 'q3', 'q4', 'q5']
+        subset = df[cols]
+        mask = subset.isna().any(axis=1)
+        na_idx = df.index[mask].to_numpy()
+        for i in na_idx:
+            row = df.loc[i, cols]
+            row_mean = row.mean(skipna=True)
+            df.loc[i, cols] = row.fillna(row_mean)
+        
+        return df, na_idx
+
+
+
+
+
+qa = QuestionnaireAnalysis("data.json")
+qa.read_data()
+print(qa.data.head())
