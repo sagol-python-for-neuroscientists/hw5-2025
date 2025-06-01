@@ -25,8 +25,8 @@ class QuestionnaireAnalysis:
         """Reads the json data located in self.data_fname into memory, to
         the attribute self.data.
         """
-        unclean_data = pd.read_json(self.data_fname)
-        self.data = self.clean_data(unclean_data)
+        self.data = pd.read_json(self.data_fname)
+        # self.data = self.clean_data(unclean_data)
 
 
     def show_age_distrib(self) -> Tuple[np.ndarray, np.ndarray]:
@@ -129,6 +129,8 @@ class QuestionnaireAnalysis:
             nans_count = row[questions_columns].isna().sum()
             if nans_count <= maximal_nans_per_sub:
                 score = row[questions_columns].mean(skipna=True)
-                df.at[index, "score"] = score.round(0).astype("UInt8")
+                df.at[index, "score"] = np.floor(score)
 
+
+        df["score"] = df["score"].astype(pd.UInt8Dtype())
         return df
