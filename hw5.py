@@ -129,13 +129,30 @@ class QuestionnaireAnalysis:
         pd.DataFrame
             A new DF with a new column - "score".
         """
-        new_df = self.data.copy()
+        df = self.data.copy()
         cols = ['q1', 'q2', 'q3', 'q4', 'q5']
-        subset = new_df[cols]
+        subset = df[cols]
         na_count = subset.isna().sum(axis=1)
         mean_scores = np.floor(subset.mean(axis=1))
 
         mean_scores[na_count > maximal_nans_per_sub] = np.nan
-        new_df['score'] = pd.Series(mean_scores, index=new_df.index).astype('UInt8')
+        df['score'] = pd.Series(mean_scores, index=df.index).astype('UInt8')
 
-        return new_df    
+        return df    
+    
+    # Bonus Question:
+    def correlate_gender_age(self) -> pd.DataFrame:
+        """Looks for a correlation between the gender of the subject, their age
+        and the score for all five questions.
+
+        Returns
+        -------
+        pd.DataFrame
+            A DataFrame with a MultiIndex containing the gender and whether the subject is above
+            40 years of age, and the average score in each of the five questions.
+        """
+        df = self.data.copy()
+        df = df.reset_index()
+        df.index = pd.MultiIndex.from_frame(df[['index', 'gender', 'age' ]])
+
+        return df.groupby([df["gander"], df["age"] > 40])[['q1', 'q2', 'q3', 'q4', 'q5']].mean()
