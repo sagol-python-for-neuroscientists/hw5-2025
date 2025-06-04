@@ -50,10 +50,6 @@ class QuestionnaireAnalysis:
         if list(self.data.columns) != headers:
             self.data.columns = headers
 
-        # Assign a unique serial number as the index
-        # self.data.index = range(1, len(self.data) + 1)
-        # self.data.index.name = "Serial_Number"
-
     def show_age_distrib(self) -> Tuple[np.ndarray, np.ndarray]:
         """Calculates and plots the age distribution of the participants.
 
@@ -205,16 +201,12 @@ class QuestionnaireAnalysis:
             A DataFrame with a MultiIndex containing the gender and whether the subject is above
             40 years of age, and the average score in each of the five questions.
         """
-        df = self.data.copy()
-        # Ensure age is numeric
+        df = self.raw_data.copy()
         df["age"] = pd.to_numeric(df["age"], errors="coerce")
-        # Create a column for age group: True if age > 40, else False
-        df["age_above_40"] = df["age"] > 40
-
-        # Set MultiIndex: ordinal index, gender, age
-        df = df.set_index([df.index, "gender", "age"])
-
-        # Group by gender and age_above_40, then calculate mean for q1-q5
-        grouped = df.groupby(["gender", "age_above_40"])[["q1", "q2", "q3", "q4", "q5"]].mean()
-
+        df["age"] = df["age"] > 40
+        # Ensure question columns are numeric
+        for col in ["q1", "q2", "q3", "q4", "q5"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+        grouped = df.groupby(["gender", "age"])[["q1", "q2", "q3", "q4", "q5"]].mean()
+        grouped = grouped.astype("float64")
         return grouped
