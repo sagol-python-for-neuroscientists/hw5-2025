@@ -110,4 +110,32 @@ class QuestionnaireAnalysis:
         
         return df, na_idx
 
-  
+    def score_subjects(self, maximal_nans_per_sub: int = 1) -> pd.DataFrame:
+        """Calculates the average score of a subject and adds a new "score" column
+        with it.
+
+        If the subject has more than "maximal_nans_per_sub" NaN in his grades, the
+        score should be NA. Otherwise, the score is simply the mean of the other grades.
+        The datatype of score is UInt8, and the floating point raw numbers should be
+        rounded down.
+
+        Parameters
+        ----------
+        maximal_nans_per_sub : int, optional
+            Number of allowed NaNs per subject before giving a NA score.
+
+        Returns
+        -------
+        pd.DataFrame
+            A new DF with a new column - "score".
+        """
+        new_df = self.data.copy()
+        cols = ['q1', 'q2', 'q3', 'q4', 'q5']
+        subset = new_df[cols]
+        na_count = subset.isna().sum(axis=1)
+        mean_scores = np.floor(subset.mean(axis=1))
+
+        mean_scores[na_count > maximal_nans_per_sub] = np.nan
+        new_df['score'] = pd.Series(mean_scores, index=new_df.index).astype('UInt8')
+
+        return new_df  
