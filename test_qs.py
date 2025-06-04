@@ -2,7 +2,7 @@ import pathlib
 
 import pytest
 
-from hw5_q1 import *
+from hw5 import *
 
 
 def test_valid_input():
@@ -102,7 +102,7 @@ def test_score_dtype():
 
 
 def test_score_results():
-    truth = pd.read_csv("tests_data/q4_score.csv", squeeze=True, index_col=0).astype(
+    truth = pd.read_csv("tests_data/q4_score.csv", index_col=0).squeeze("columns").astype(
         "UInt8"
     )
     fname = "data.json"
