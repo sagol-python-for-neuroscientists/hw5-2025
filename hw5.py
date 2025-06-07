@@ -209,7 +209,7 @@ class QuestionnaireAnalysis:
         df = self.data.copy()
         
         # Calculate the score for each subject
-        cols = df.columns[8:]
+        cols = df.columns[7:]
          # Compute scores with floor; assign pd.NA if too many NaNs
         df['score'] = df[cols].apply(
             lambda row: np.floor(row.mean()) if row.isna().sum() <= maximal_nans_per_sub else pd.NA,
