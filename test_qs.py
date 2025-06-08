@@ -1,6 +1,8 @@
 import pathlib
 
 import pytest
+import pandas as pd
+import numpy as np
 
 from hw5 import *
 
@@ -60,17 +62,24 @@ def test_correct_age_distrib_edges():
 
 def test_email_validation():
     truth = pd.read_csv("tests_data/q2_email.csv")
+
+
     fname = "data.json"
     q = QuestionnaireAnalysis(fname)
     q.read_data()
     corrected = q.remove_rows_without_mail()
+    print("Corrected emails:\n", corrected["email"].to_string(index=False))
+    #diff = pd.concat([truth["email"], corrected["email"]]).drop_duplicates(keep=False)
+    #print("Mismatched emails:\n", diff.to_string(index=False))
+
     assert truth["email"].equals(corrected["email"])
 
 
 def test_fillna_rows():
     truth = np.load("tests_data/q3_fillna.npy")
     fname = "data.json"
-    q = QuestionnaireAnalysis(fname)
+
+    q = QuestionnaireAnalysis(fname)    
     q.read_data()
     _, rows = q.fill_na_with_mean()
     assert np.array_equal(truth, rows)
@@ -102,14 +111,24 @@ def test_score_dtype():
 
 
 def test_score_results():
-    truth = (
-        pd.read_csv("tests_data/q4_score.csv", index_col=0).astype("UInt8").squeeze()
-    )
-    
+    # truth = pd.read_csv("tests_data/q4_score.csv", squeeze=True, index_col=0).astype(
+    #     "UInt8")
+    #I added it 
+    truth = pd.read_csv("tests_data/q4_score.csv", index_col=0).iloc[:, 0].astype("UInt8")
+
     fname = "data.json"
     q = QuestionnaireAnalysis(fname)
     q.read_data()
     df = q.score_subjects()
+    print("EXPECTED (truth):")
+    print(truth.head(10))
+
+    print("\nACTUAL (df['score']):")
+    print(df["score"].head(10))
+
+    print("Index match:", df.index.equals(truth.index))
+    print("Value match:", df["score"].values[:10], "vs", truth.values[:10])
+
     assert df["score"].equals(truth)
 
 
