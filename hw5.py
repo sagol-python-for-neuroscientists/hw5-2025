@@ -114,7 +114,13 @@ class QuestionnaireAnalysis:
             raise RuntimeError("run read_data() first")
         df = self.data.copy()
         grade_cols = self._question_columns()
+
         df["age"] = (df["age"] // 10) * 10
+        df = df[(df["age"] >= 20) & (df["age"] <= 50)]
+
+        top_genders = df["gender"].value_counts().nlargest(2).index
+        df = df[df["gender"].isin(top_genders)]
+
         grouped = (
             df.groupby(["gender", "age"])[grade_cols]
             .mean()
