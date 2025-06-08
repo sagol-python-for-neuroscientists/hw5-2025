@@ -11,9 +11,12 @@ import matplotlib.pyplot as plt
 
 class QuestionnaireAnalysis:
     def __init__(self, data_fname: Union[pathlib.Path, str]):
-        self.data_fname = pathlib.Path(data_fname)
+        path = pathlib.Path(data_fname)
+        if not path.is_file():
+            raise ValueError(f"File not found: {path}")
+        self.data_fname = path
         self.data: pd.DataFrame | None = None
-
+        
     def read_data(self) -> None:
         self.data = pd.read_json(self.data_fname)
 
@@ -113,7 +116,7 @@ class QuestionnaireAnalysis:
         df = df.set_index(["gender", "age"], append=True)
         df["age_above_40"] = df.index.get_level_values("age") > 40
         grouped = (
-            df.groupby(["gender", "age_above_40"])[grade_cols]
+            df.groupby(["gender", "age"])[grade_cols]
             .mean()
             .astype(float)
         )
