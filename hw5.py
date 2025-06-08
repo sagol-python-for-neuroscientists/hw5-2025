@@ -218,15 +218,34 @@ class QuestionnaireAnalysis:
 
         return df
 
-    # # Q5
-    # def correlate_gender_age(self) -> pd.DataFrame:
-    # """Looks for a correlation between the gender of the subject, their age
-    # and the score for all five questions.
+    # Q5
+    def correlate_gender_age(self) -> pd.DataFrame:
+        """Looks for a correlation between the gender of the subject, their age
+        and the score for all five questions.
 
-    # Returns
-    # -------
-    # pd.DataFrame
-    # A DataFrame with a MultiIndex containing the gender and whether the subject is above
-    # 40 years of age, and the average score in each of the five questions.
-    # """
-    pass
+        Returns
+        -------
+        pd.DataFrame
+        A DataFrame with a MultiIndex containing the gender and whether the subject is above
+        40 years of age, and the average score in each of the five questions.
+        """
+
+        df = self.data.copy()
+
+        # Ensure age is numeric, drop rows with missing gender or age
+        df["age"] = pd.to_numeric(df["age"], errors="coerce")
+        df = df.dropna(subset=["gender", "age"])
+
+        # Create a boolean column for age > 40
+        df["age_group"] = df["age"] > 40
+
+        # Identify question columns (starting with 'q')
+        question_cols = [col for col in df.columns if col.startswith("q")]
+
+        # Group by gender and age_group and calculate mean per question
+        grouped = df.groupby(["gender", "age_group"])[question_cols].mean()
+
+        # Rename the index level from "age_group" to "age" (for matching test)
+        grouped.index.set_names(["gender", "age"], inplace=True)
+
+        return grouped
