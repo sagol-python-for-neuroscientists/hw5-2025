@@ -2,6 +2,9 @@ import pandas as pd
 import pathlib
 import numpy as np
 from typing import Union, Tuple
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
@@ -147,26 +150,23 @@ class QuestionnaireAnalysis:
         arr : np.ndarray
             Row indices of the students that their new grades were generated
         """
-        # Identify question columns (e.g., q1, q2, ...)
         question_cols = [col for col in self.data.columns if col.startswith("q")]
+        corrected_df = self.data.copy()
 
-        corrected_df = self.data.copy()  # work on a copy, not self.data
-        corrected_indices = []
+        # Calculate mean of question columns per row, ignoring NaNs
+        row_means = corrected_df[question_cols].mean(axis=1)
 
-        for idx, row in corrected_df.iterrows():
-            values = row[question_cols]
+        # Keep track of which rows have any NaNs in question columns
+        mask_nans = corrected_df[question_cols].isna().any(axis=1)
 
-            if values.isnull().any():
-                mean_val = values.dropna().mean()
+        # Fill NaNs in question columns with row means (only for those rows)
+        corrected_df.loc[mask_nans, question_cols] = (
+            corrected_df.loc[mask_nans, question_cols].T.fillna(row_means[mask_nans]).T
+        )
 
-                # Only fill if we have at least one valid value to average
-                if not np.isnan(mean_val):
-                    for col in question_cols:
-                        if pd.isna(corrected_df.at[idx, col]):
-                            corrected_df.at[idx, col] = mean_val
-                    corrected_indices.append(idx)
-
-        return corrected_df, np.array(corrected_indices)
+        # Return corrected df and indices where filling happened
+        corrected_indices = np.where(mask_nans)[0]
+        return corrected_df, corrected_indices
 
     # Q4
     def score_subjects(self, maximal_nans_per_sub: int = 1) -> pd.DataFrame:
@@ -189,9 +189,6 @@ class QuestionnaireAnalysis:
             A new DF with a new column - "score".
         """
         df = self.data.copy()  # work on a copy to avoid modifying original
-
-        # Count NaNs per row (per participant)
-        n_nans = df.isna().sum(axis=1)
 
         # Select only question columns (assumes they start with 'q')
         question_cols = [col for col in df.columns if col.startswith("q")]
