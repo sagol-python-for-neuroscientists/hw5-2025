@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-
 class QuestionnaireAnalysis:
     def __init__(self, data_fname: Union[pathlib.Path, str]):
         path = pathlib.Path(data_fname)
@@ -118,7 +117,7 @@ class QuestionnaireAnalysis:
         df["age"] = (df["age"] // 10) * 10
         df = df[(df["age"] >= 20) & (df["age"] <= 50)]
 
-        top_genders = df["gender"].value_counts().nlargest(2).index
+        top_genders = sorted(df["gender"].value_counts().nlargest(2).index.tolist())
         df = df[df["gender"].isin(top_genders)]
 
         grouped = (
@@ -126,4 +125,11 @@ class QuestionnaireAnalysis:
             .mean()
             .astype(float)
         )
+
+        idx = pd.MultiIndex.from_product(
+            [top_genders, [20, 30, 40, 50]],
+            names=["gender", "age"]
+        )
+        grouped = grouped.reindex(idx)
+
         return grouped
