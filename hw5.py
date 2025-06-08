@@ -113,21 +113,17 @@ class QuestionnaireAnalysis:
             raise RuntimeError("run read_data() first")
         df = self.data.copy()
         grade_cols = self._question_columns()
-
         df["age"] = (df["age"] // 10) * 10
-        df = df[(df["age"] >= 20) & (df["age"] <= 50)]
-
-        top_genders = sorted(df["gender"].value_counts().nlargest(2).index.tolist())
-        df = df[df["gender"].isin(top_genders)]
-
+        age_buckets = [30, 40]
+        df = df[df["age"].isin(age_buckets)]
+        genders = sorted(df["gender"].dropna().unique())
         grouped = (
             df.groupby(["gender", "age"])[grade_cols]
             .mean()
             .astype(float)
         )
-
         idx = pd.MultiIndex.from_product(
-            [top_genders, [20, 30, 40, 50]],
+            [genders, age_buckets],
             names=["gender", "age"]
         )
         grouped = grouped.reindex(idx)
