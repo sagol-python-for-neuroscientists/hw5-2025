@@ -152,7 +152,11 @@ class QuestionnaireAnalysis:
             40 years of age, and the average score in each of the five questions.
         """
         df = self.data.copy()
-        df = df.reset_index()
-        df.index = pd.MultiIndex.from_frame(df[['index', 'gender', 'age' ]])
 
-        return df.groupby([df["gander"], df["age"] > 40])[['q1', 'q2', 'q3', 'q4', 'q5']].mean()
+        df['age'] = pd.to_numeric(df['age'], errors='coerce')
+        df = df.dropna(subset=['age'])
+        df['age'] = df['age'] >= 40
+        grouped = df.groupby(["gender", "age"])[['q1', 'q2', 'q3', 'q4', 'q5']].mean()
+        grouped.index.set_names(['gender', 'age'], inplace=True)
+
+        return grouped
