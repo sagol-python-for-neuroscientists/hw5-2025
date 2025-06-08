@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+
 class QuestionnaireAnalysis:
     def __init__(self, data_fname: Union[pathlib.Path, str]):
         path = pathlib.Path(data_fname)
@@ -23,11 +24,11 @@ class QuestionnaireAnalysis:
         if self.data is None:
             raise RuntimeError("run read_data() first")
         ages = self.data["age"].to_numpy()
-        bins = np.arange(0, 111, 10)
+        bins = np.arange(0, 101, 10)
         hist, bins = np.histogram(ages, bins=bins)
 
         plt.figure(figsize=(8, 4))
-        plt.bar(bins[:-1], hist, width=10, align="edge")
+        plt.bar(bins[:-1], hist, width=8, align="edge")
         plt.xlabel("Age")
         plt.ylabel("Number of participants")
         plt.title("Age distribution")
@@ -113,6 +114,7 @@ class QuestionnaireAnalysis:
             raise RuntimeError("run read_data() first")
         df = self.data.copy()
         grade_cols = self._question_columns()
+        df["age"] = (df["age"] // 10) * 10
         grouped = (
             df.groupby(["gender", "age"])[grade_cols]
             .mean()
