@@ -113,6 +113,7 @@ class QuestionnaireAnalysis:
             raise RuntimeError("run read_data() first")
         df = self.data.copy()
         grade_cols = self._question_columns()
+        df = df[df["email"].apply(self._is_valid_email)]
         df["age"] = df["age"] > 40
         genders = ["Female", "Fluid", "Male", "Other"]
         df = df[df["gender"].isin(genders)]
@@ -126,4 +127,5 @@ class QuestionnaireAnalysis:
             names=["gender", "age"]
         )
         grouped = grouped.reindex(idx)
+
         return grouped
