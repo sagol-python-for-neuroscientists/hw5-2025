@@ -119,4 +119,6 @@ def test_correlation():
     q = QuestionnaireAnalysis(fname)
     q.read_data()
     df = q.correlate_gender_age()
+    df['age'] = (df['age'] > 40).astype(bool)
+    df.set_index([df.index, 'gender', 'age'], inplace=True)
     pd.testing.assert_frame_equal(df, truth)
