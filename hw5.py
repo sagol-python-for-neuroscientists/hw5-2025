@@ -114,6 +114,7 @@ class QuestionnaireAnalysis:
         df = self.data.copy()
         grade_cols = self._question_columns()
         df = df[df["email"].apply(self._is_valid_email)]
+        df = df.dropna(subset=grade_cols)
         df["age"] = df["age"] > 40
         genders = ["Female", "Fluid", "Male", "Other"]
         df = df[df["gender"].isin(genders)]
