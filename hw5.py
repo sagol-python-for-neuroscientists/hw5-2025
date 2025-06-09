@@ -18,7 +18,7 @@ class QuestionnaireAnalysis:
             raise ValueError(f"File does not exist: {self.data_fname}")
         self.data = None
 
-    def read_data(self) -> None:
+    def read_data(self):
         """Reads the JSON data into a DataFrame and stores it in self.data."""
         with self.data_fname.open(encoding="utf-8") as f:
             raw = json.load(f)
@@ -152,23 +152,15 @@ class QuestionnaireAnalysis:
         """
         df = self.data.copy()
 
-        # Identify question columns and ensure they are numeric
         question_cols = [col for col in df.columns if col.startswith("q")]
         df[question_cols] = df[question_cols].apply(pd.to_numeric, errors="coerce")
-
-        # Convert age to numeric and drop rows with missing age
         df["age"] = pd.to_numeric(df["age"], errors="coerce")
         df = df[df["age"].notna()]
-
-        # Build MultiIndex: row index, gender, age value
         df.index = pd.MultiIndex.from_arrays([df.index, df["gender"], df["age"]],
                                             names=["row", "gender", "age_value"])
         df = df.drop(columns=["gender", "age"])  # prevent ambiguity
-
-        # Add derived column: age_above_40
         df["age_above_40"] = df.index.get_level_values("age_value") > 40
 
-        # Group by gender and age group (boolean), compute mean per question
         result = df.groupby([df.index.get_level_values("gender"), df["age_above_40"]])[question_cols].mean()
         result.index.names = ["gender", "age"]
 
