@@ -64,79 +64,72 @@ class QuestionnaireAnalysis:
         df = df.dropna(subset=['email'])
         return df    
 
-def is_valid_email(s):
-    if not isinstance(s, str):
-        return False
-    if s.count('@') != 1:
-        return False
-    if s.startswith('@') or s.endswith('@') or s.startswith('.') or s.endswith('.') or not s.endswith('com'):
-        return False
-    local, domain = s.split('@')
-    if domain.startswith('.'):
-        return False
-    return True
+    def is_valid_email(s):
+        if not isinstance(s, str):
+            return False
+        if s.count('@') != 1:
+            return False
+        if s.startswith('@') or s.endswith('@') or s.startswith('.') or s.endswith('.') or not s.endswith('com'):
+            return False
+        local, domain = s.split('@')
+        if domain.startswith('.'):
+            return False
+        return True
 
-def fill_na_with_mean(self) -> Tuple[pd.DataFrame, np.ndarray]:
-    """Finds, in the original DataFrame, the subjects that didn't answer
-    all questions, and replaces that missing value with the mean of the
-    other grades for that student.
-
-Returns
--------
-df : pd.DataFrame
-  The corrected DataFrame after insertion of the mean grade
-arr : np.ndarray
-      Row indices of the students that their new grades were generated
-    """
-    df = pd.DataFrame(self.data)
-    question_cols = [col for col in df.columns if col.startswith("q")]
-    t = Tuple[pd.DataFrame, np.ndarray]
-    rows_with_nans = df[question_cols].isna().any(axis=1) # find all rows with NaN values (missing questions)
-    corrected_indices = df[rows_with_nans].index.to_numpy()
-    
-    for idx in corrected_indices:
-        row = df.loc[idx, question_cols]
-        mean_val = row.mean(skipna=True)
-        df.loc[idx, question_cols] = row.fillna(mean_val)
-
-    return df, corrected_indices
-
-def score_subjects(self, maximal_nans_per_sub: int = 1) -> pd.DataFrame:
-    """Calculates the average score of a subject and adds a new "score" column
-    with it.
-
-    If the subject has more than "maximal_nans_per_sub" NaN in his grades, the
-    score should be NA. Otherwise, the score is simply the mean of the other grades.
-    The datatype of score is UInt8, and the floating point raw numbers should be
-    rounded down.
-
-    Parameters
-    ----------
-    maximal_nans_per_sub : int, optional
-        Number of allowed NaNs per subject before giving a NA score.
+    def fill_na_with_mean(self) -> Tuple[pd.DataFrame, np.ndarray]:
+        """Finds, in the original DataFrame, the subjects that didn't answer
+        all questions, and replaces that missing value with the mean of the
+        other grades for that student.
 
     Returns
     -------
-    pd.DataFrame
-        A new DF with a new column - "score".
-    """
-    df = pd.DataFrame(self.data)
-    df['score'] = np.nan()
-    question_cols = [col for col in df.columns if col.startswith("q")]
-    
-    nan_counts = df[question_cols].isna().sum(axis=1)
+    df : pd.DataFrame
+    The corrected DataFrame after insertion of the mean grade
+    arr : np.ndarray
+        Row indices of the students that their new grades were generated
+        """
+        df = pd.DataFrame(self.data)
+        question_cols = [col for col in df.columns if col.startswith("q")]
+        t = Tuple[pd.DataFrame, np.ndarray]
+        rows_with_nans = df[question_cols].isna().any(axis=1) # find all rows with NaN values (missing questions)
+        corrected_indices = df[rows_with_nans].index.to_numpy()
+        
+        for idx in corrected_indices:
+            row = df.loc[idx, question_cols]
+            mean_val = row.mean(skipna=True)
+            df.loc[idx, question_cols] = row.fillna(mean_val)
 
-    scores = np.floor(df[question_cols].mean(axis=1, skipna=True))
+        return df, corrected_indices
 
-    scores[nan_counts > maximal_nans_per_sub] = np.nan
+    def score_subjects(self, maximal_nans_per_sub: int = 1) -> pd.DataFrame:
+        """Calculates the average score of a subject and adds a new "score" column
+        with it.
 
-    df['score'] = scores.astype('UInt8', errors='ignore')
+        If the subject has more than "maximal_nans_per_sub" NaN in his grades, the
+        score should be NA. Otherwise, the score is simply the mean of the other grades.
+        The datatype of score is UInt8, and the floating point raw numbers should be
+        rounded down.
 
-    return df
+        Parameters
+        ----------
+        maximal_nans_per_sub : int, optional
+            Number of allowed NaNs per subject before giving a NA score.
 
-"""  
-qa = QuestionnaireAnalysis('data.json')
+        Returns
+        -------
+        pd.DataFrame
+            A new DF with a new column - "score".
+        """
+        df = pd.DataFrame(self.data)
+        df['score'] = np.nan()
+        question_cols = [col for col in df.columns if col.startswith("q")]
+        
+        nan_counts = df[question_cols].isna().sum(axis=1)
 
-data = qa.read_data()
-print(qa.remove_rows_without_mail())
-"""
+        scores = np.floor(df[question_cols].mean(axis=1, skipna=True))
+
+        scores[nan_counts > maximal_nans_per_sub] = np.nan
+
+        df['score'] = scores.astype('UInt8', errors='ignore')
+
+        return df
