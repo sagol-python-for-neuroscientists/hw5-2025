@@ -152,18 +152,14 @@ class QuestionnaireAnalysis:
         """
         df = self.data.copy()
 
-        # Identify question columns and ensure they are numeric
         question_cols = [col for col in df.columns if col.startswith("q")]
         df[question_cols] = df[question_cols].apply(pd.to_numeric, errors="coerce")
 
-        # Ensure age column is numeric
         df["age"] = pd.to_numeric(df["age"], errors="coerce")
         df = df[df["age"].notna()]  # Remove rows with invalid age
 
-        # Add boolean column for age > 40
         df["age_above_40"] = df["age"] > 40
 
-        # Group by gender and age_above_40 and calculate average per question
         result = df.groupby(["gender", "age_above_40"])[question_cols].mean()
         result.index.names = ["gender", "age"]
 
@@ -182,7 +178,6 @@ class QuestionnaireAnalysis:
 
         question_cols = result.columns.tolist()
 
-        # Prepare group labels
         result_plot = result.reset_index()
         group_labels = result_plot.apply(lambda row: f"{row['gender']}, {'>40' if row['age'] else '<=40'}", axis=1)
 
@@ -238,6 +233,7 @@ if __name__ == "__main__":
     print(scored_df[["score"]].head())
 
     # correlate_gender_age
-    corr_df = q.correlate_gender_age()
     print("Average scores by gender and age group:")
-    print(corr_df)
+    res = q.correlate_gender_age()
+    print(res)
+    q.plot_gender_age_results(res) 
