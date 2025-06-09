@@ -115,14 +115,42 @@ class QuestionnaireAnalysis:
         data_with_score['score']= pd.Series(scores, dtype='UInt8')
         return data_with_score
 
-#if __name__ == "__main__":
-q = QuestionnaireAnalysis('data.json')
-q.read_data()
-hist, bin_edges = q.show_age_distrib()
-print(hist, bin_edges)
-clean_df = q.remove_rows_without_mail()
-print(len(clean_df))
-filled_data, corrected_indices = q.fill_na_with_mean()
-data_with_score = q.score_subjects()
-print(data_with_score[:10])
-print(data_with_score['score'].dtype)
+    def correlate_gender_age(self) -> pd.DataFrame:
+        """Looks for a correlation between the gender of the subject, their age
+        and the score for all five questions.
+
+    Returns
+    -------
+    pd.DataFrame
+        A DataFrame with a MultiIndex containing the gender and whether the subject is above
+        40 years of age, and the average score in each of the five questions.
+    """
+
+        fixed_df = self.data.replace('nan', np.nan)
+        ordinal_index = fixed_df.index
+        #creating a multi index:
+        fixed_df.index = pd.MultiIndex.from_arrays([
+            ordinal_index, fixed_df['gender'], fixed_df['age']], 
+            names=['row', 'gender', 'age']
+            )
+        age_group = fixed_df.index.get_level_values('age').map(lambda x: True if x < 40 else False)
+        gender_level = fixed_df.index.get_level_values('gender')
+        #grouping by gender and age group:
+        grouped = fixed_df.groupby([gender_level, age_group])
+        grouped_means = grouped[['q1', 'q2', 'q3', 'q4', 'q5']].mean().reset_index() #returning to normal index
+        return grouped_means
+
+if __name__ == "__main__":
+    q = QuestionnaireAnalysis('data.json')
+    q.read_data()
+    hist, bin_edges = q.show_age_distrib()
+    print(hist, bin_edges)
+    clean_df = q.remove_rows_without_mail()
+    print(len(clean_df))
+    filled_data, corrected_indices = q.fill_na_with_mean()
+    data_with_score = q.score_subjects()
+    print(data_with_score[:10])
+    print(data_with_score['score'].dtype)
+    grouped_means = q.correlate_gender_age()
+    print('grouped means but different than test')
+    print(grouped_means)
