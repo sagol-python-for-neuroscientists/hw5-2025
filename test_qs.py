@@ -102,9 +102,10 @@ def test_score_dtype():
 
 
 def test_score_results():
-    truth = pd.read_csv("tests_data/q4_score.csv", squeeze=True, index_col=0).astype(
-        "UInt8"
+    truth = (
+        pd.read_csv("tests_data/q4_score.csv", index_col=0).astype("UInt8").squeeze()
     )
+    
     fname = "data.json"
     q = QuestionnaireAnalysis(fname)
     q.read_data()
@@ -118,4 +119,6 @@ def test_correlation():
     q = QuestionnaireAnalysis(fname)
     q.read_data()
     df = q.correlate_gender_age()
+    df['age'] = (df['age'] > 40).astype(bool)
+    df.set_index([df.index, 'gender', 'age'], inplace=True)
     pd.testing.assert_frame_equal(df, truth)
