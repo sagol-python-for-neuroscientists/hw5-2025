@@ -113,6 +113,7 @@ class QuestionnaireAnalysis:
             raise RuntimeError("run read_data() first")
         df = self.data.copy()
         grade_cols = self._question_columns()
+        df = df.dropna(subset=["age"])
         df["age"] = df["age"] >= 40
         genders = sorted(df["gender"].dropna().unique())
         grouped = (
