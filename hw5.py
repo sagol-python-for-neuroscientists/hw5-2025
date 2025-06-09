@@ -4,7 +4,7 @@ from typing import Union, Tuple
 import json
 import pathlib
 import pandas as pd
-import re
+
 
 class QuestionnaireAnalysis:
     """
@@ -152,47 +152,92 @@ class QuestionnaireAnalysis:
         """
         df = self.data.copy()
 
+        # Identify question columns and ensure they are numeric
         question_cols = [col for col in df.columns if col.startswith("q")]
         df[question_cols] = df[question_cols].apply(pd.to_numeric, errors="coerce")
-        df["age"] = pd.to_numeric(df["age"], errors="coerce")
-        df = df[df["age"].notna()]
-        df.index = pd.MultiIndex.from_arrays([df.index, df["gender"], df["age"]],
-                                            names=["row", "gender", "age_value"])
-        df = df.drop(columns=["gender", "age"])  # prevent ambiguity
-        df["age_above_40"] = df.index.get_level_values("age_value") > 40
 
-        result = df.groupby([df.index.get_level_values("gender"), df["age_above_40"]])[question_cols].mean()
+        # Ensure age column is numeric
+        df["age"] = pd.to_numeric(df["age"], errors="coerce")
+        df = df[df["age"].notna()]  # Remove rows with invalid age
+
+        # Add boolean column for age > 40
+        df["age_above_40"] = df["age"] > 40
+
+        # Group by gender and age_above_40 and calculate average per question
+        result = df.groupby(["gender", "age_above_40"])[question_cols].mean()
         result.index.names = ["gender", "age"]
 
         return result.sort_index()
         
 
+    def plot_gender_age_results(self, result: pd.DataFrame) -> None:
+        """
+        Plots the average question results per group (gender x age>40).
+        
+        Parameters
+        ----------
+        result : pd.DataFrame
+            The grouped result returned from correlate_gender_age.
+        """
+
+        question_cols = result.columns.tolist()
+
+        # Prepare group labels
+        result_plot = result.reset_index()
+        group_labels = result_plot.apply(lambda row: f"{row['gender']}, {'>40' if row['age'] else '<=40'}", axis=1)
+
+        n_groups = len(result_plot)
+        n_questions = len(question_cols)
+        bar_width = 0.15
+        x = np.arange(n_groups)
+
+        fig, ax = plt.subplots(figsize=(14, 7))
+
+        for i, question in enumerate(question_cols):
+            ax.bar(x + i * bar_width,
+                result_plot[question],
+                width=bar_width,
+                label=question)
+
+        ax.set_xticks(x + bar_width * (n_questions - 1) / 2)
+        ax.set_xticklabels(group_labels, rotation=45, ha="right")
+
+        ax.set_xlabel("Group (Gender, Age > 40)")
+        ax.set_ylabel("Average Score")
+        ax.set_title("Average question results for different groups of participants")
+        ax.legend(title="Question")
+        plt.tight_layout()
+        plt.show()
+
+
+
 if __name__ == "__main__":
+
     # Create instance with the data file
     q = QuestionnaireAnalysis("data.json")
     
     # Load the data from file
     q.read_data()
     
-    # Show and return the age distribution
+    # show_age_distrib
     hist, bins = q.show_age_distrib()
     print("Age histogram:", hist)
     print("Bin edges:", bins)
 
-    # Remove rows with invalid emails and show number of valid rows
+    # remove_rows_without_mail
     valid_df = q.remove_rows_without_mail()
     print("Number of valid emails:", len(valid_df))
 
-    # Fill missing values with row-wise mean, and get affected row indices
+    # fill_na_with_mean
     filled_df, modified_rows = q.fill_na_with_mean()
     print("Indices of rows with filled NaNs:", modified_rows)
 
-    # Score each subject, allowing up to 1 missing value
+    # score_subjects
     scored_df = q.score_subjects()
     print("First few scored rows:")
     print(scored_df[["score"]].head())
 
-    # Group data by gender and age group and calculate mean per question
+    # correlate_gender_age
     corr_df = q.correlate_gender_age()
     print("Average scores by gender and age group:")
     print(corr_df)
