@@ -111,14 +111,17 @@ class QuestionnaireAnalysis:
     def correlate_gender_age(self) -> pd.DataFrame:
         if self.data is None:
             raise RuntimeError("run read_data() first")
-        df, _ = self.fill_na_with_mean()
+        df = self.data.copy()
         grade_cols = self._question_columns()
+        df = df[df["email"].apply(self._is_valid_email)]
+        nan_count = df[grade_cols].isna().sum(axis=1)
+        df = df[nan_count <= 1]
         df["age"] = df["age"] > 40
         genders = ["Female", "Fluid", "Male", "Other"]
         df = df[df["gender"].isin(genders)]
         grouped = (
             df.groupby(["gender", "age"])[grade_cols]
-              .mean()
+              .mean()              # NaNs are ignored column-wise
               .astype(float)
         )
         idx = pd.MultiIndex.from_product(
