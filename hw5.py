@@ -111,10 +111,8 @@ class QuestionnaireAnalysis:
     def correlate_gender_age(self) -> pd.DataFrame:
         if self.data is None:
             raise RuntimeError("run read_data() first")
-        df = self.data.copy()
+        df, _ = self.fill_na_with_mean()
         grade_cols = self._question_columns()
-        df = df[df["email"].apply(self._is_valid_email)]
-        df = df.dropna(subset=grade_cols)
         df["age"] = df["age"] > 40
         genders = ["Female", "Fluid", "Male", "Other"]
         df = df[df["gender"].isin(genders)]
