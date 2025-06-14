@@ -166,7 +166,8 @@ class QuestionnaireAnalysis:
 if __name__ == "__main__":
     a = QuestionnaireAnalysis("./data.json")
     a.read_data()
-    a.correlate_gender_age()
+    a.show_age_distrib()
+    plt.show()
 
 
 
